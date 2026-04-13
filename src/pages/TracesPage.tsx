@@ -1,5 +1,7 @@
-import { useTraceStore, TaskType } from "@/store/traceStore";
+import { useState } from "react";
+import { useTraceStore, TaskType, TraceEntry } from "@/store/traceStore";
 import { Button } from "@/components/ui/button";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 const taskTypeColors: Record<TaskType, string> = {
   simple_chat: "bg-blue-100 text-blue-700",
@@ -8,6 +10,60 @@ const taskTypeColors: Record<TaskType, string> = {
   tool_call:   "bg-orange-100 text-orange-700",
   reasoning:   "bg-yellow-100 text-yellow-700",
 };
+
+function TraceRow({ trace }: { trace: TraceEntry }) {
+  const [expanded, setExpanded] = useState(false);
+  const summary = trace.input.length > 60
+    ? trace.input.slice(0, 60).trimEnd() + "…"
+    : trace.input;
+
+  return (
+    <div className="rounded-lg border bg-card text-sm overflow-hidden">
+      {/* One-liner row */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-muted/50 transition-colors"
+      >
+        {expanded
+          ? <ChevronDown size={14} className="shrink-0 text-muted-foreground" />
+          : <ChevronRight size={14} className="shrink-0 text-muted-foreground" />
+        }
+        <span className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${taskTypeColors[trace.taskType]}`}>
+          {trace.taskType.replace("_", " ")}
+        </span>
+        <span className="flex-1 truncate text-sm">{summary}</span>
+        <span className="text-xs text-muted-foreground shrink-0">{trace.durationMs}ms</span>
+        <span className="text-xs text-muted-foreground shrink-0">
+          {new Date(trace.timestamp).toLocaleTimeString()}
+        </span>
+      </button>
+
+      {/* Expanded detail panel */}
+      {expanded && (
+        <div className="border-t px-4 py-3 space-y-3 bg-muted/20">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">Agent:</span>
+            <span>{trace.agentUsed}</span>
+            <span className="mx-1">·</span>
+            <span>{new Date(trace.timestamp).toLocaleString()}</span>
+            <span className="mx-1">·</span>
+            <span>{trace.durationMs}ms</span>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Input</p>
+            <p className="rounded-md bg-muted px-3 py-2 text-sm">{trace.input}</p>
+          </div>
+
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Output</p>
+            <p className="rounded-md bg-muted px-3 py-2 text-sm whitespace-pre-wrap">{trace.output}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TracesPage() {
   const { traces, clearTraces } = useTraceStore();
@@ -28,51 +84,17 @@ export default function TracesPage() {
       </div>
 
       {/* Trace list */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1.5">
         {traces.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
             No traces yet. Start a conversation to see activity.
           </div>
         ) : (
-          traces.map((trace) => (
-            <div key={trace.id} className="rounded-lg border bg-card p-4 space-y-3 text-sm">
-              {/* Top row */}
-              <div className="flex items-center justify-between gap-2">
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${taskTypeColors[trace.taskType]}`}>
-                  {trace.taskType.replace("_", " ")}
-                </span>
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {trace.durationMs}ms
-                </span>
-                <span className="text-xs text-muted-foreground">
-                  {new Date(trace.timestamp).toLocaleTimeString()}
-                </span>
-              </div>
-
-              {/* Agent */}
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">Agent:</span>
-                <span>{trace.agentUsed}</span>
-              </div>
-
-              {/* Input */}
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Input</p>
-                <p className="rounded-md bg-muted px-3 py-2 text-sm">{trace.input}</p>
-              </div>
-
-              {/* Output */}
-              <div className="space-y-1">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Output</p>
-                <p className="rounded-md bg-muted px-3 py-2 text-sm line-clamp-4 whitespace-pre-wrap">
-                  {trace.output}
-                </p>
-              </div>
-            </div>
-          ))
+          traces.map((trace) => <TraceRow key={trace.id} trace={trace} />)
         )}
       </div>
     </div>
   );
 }
+
 

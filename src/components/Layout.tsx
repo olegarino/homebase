@@ -14,8 +14,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen w-screen bg-background text-foreground">
       {/* Sidebar */}
       <aside className="flex w-56 flex-col border-r bg-muted/40 p-3 gap-1">
-        <div className="mb-4 px-2 py-3">
-          <h1 className="text-lg font-bold tracking-tight">Buddy</h1>
+        <div className="mb-4 px-2 py-3 text-center">
+          <h1 className="text-lg font-bold tracking-tight">Homebase</h1>
           <p className="text-xs text-muted-foreground">Local AI Orchestrator</p>
         </div>
         {navItems.map(({ to, label, icon: Icon }) => (
