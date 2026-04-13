@@ -55,6 +55,34 @@ async fn chat(
     Ok(())
 }
 
+#[tauri::command]
+async fn get_ollama_status() -> bool {
+    reqwest::get("http://localhost:11434")
+        .await
+        .map(|r| r.status().is_success())
+        .unwrap_or(false)
+}
+
+#[tauri::command]
+async fn start_ollama() -> Result<(), String> {
+    std::process::Command::new("ollama")
+        .arg("serve")
+        .spawn()
+        .map_err(|e| format!("Failed to start Ollama: {:?}", e))?;
+    tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
+    Ok(())
+}
+
+#[tauri::command]
+async fn stop_ollama() -> Result<(), String> {
+    std::process::Command::new("pkill")
+        .arg("-x")
+        .arg("ollama")
+        .spawn()
+        .map_err(|e| format!("Failed to stop Ollama: {:?}", e))?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -62,7 +90,7 @@ pub fn run() {
         .manage(AppState {
             ollama: Mutex::new(Ollama::default())
         })
-        .invoke_handler(tauri::generate_handler![get_models, chat])
+        .invoke_handler(tauri::generate_handler![get_models, chat, get_ollama_status, start_ollama, stop_ollama])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
