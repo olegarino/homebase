@@ -1,22 +1,24 @@
 import { NavLink } from "react-router-dom";
 import { MessageSquare, Activity, Settings, Radio } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const navItems = [
-  { to: "/", label: "Chat", icon: MessageSquare },
-  { to: "/traces", label: "Traces", icon: Activity },
-  { to: "/status", label: "Status", icon: Radio },
-  { to: "/settings", label: "Settings", icon: Settings },
-];
+import { useT } from "@/i18n";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const t = useT();
+  const navItems = [
+    { to: "/", label: t.nav.chat, icon: MessageSquare },
+    { to: "/traces", label: t.nav.traces, icon: Activity },
+    { to: "/status", label: t.nav.status, icon: Radio },
+    { to: "/settings", label: t.nav.settings, icon: Settings },
+  ];
+
   return (
     <div className="flex h-screen w-screen bg-background text-foreground">
       {/* Sidebar */}
       <aside className="flex w-56 flex-col border-r bg-muted/40 p-3 gap-1">
         <div className="mb-4 px-2 py-3 text-center">
           <h1 className="text-lg font-bold tracking-tight">Homebase</h1>
-          <p className="text-xs text-muted-foreground">Local AI Orchestrator</p>
+          <p className="text-xs text-muted-foreground">{t.appSubtitle}</p>
         </div>
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink

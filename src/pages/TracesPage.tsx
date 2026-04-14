@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTraceStore, TaskType, TraceEntry } from "@/store/traceStore";
+import { useT } from "@/i18n";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
@@ -24,6 +25,7 @@ const taskTypeColors: Record<TaskType, string> = {
 
 function TraceRow({ trace }: { trace: TraceEntry }) {
   const [expanded, setExpanded] = useState(false);
+  const t = useT();
   const summary = trace.input.length > 60
     ? trace.input.slice(0, 60).trimEnd() + "…"
     : trace.input;
@@ -40,7 +42,7 @@ function TraceRow({ trace }: { trace: TraceEntry }) {
           : <ChevronRight size={14} className="shrink-0 text-muted-foreground" />
         }
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium shrink-0 ${taskTypeColors[trace.taskType]}`}>
-          {trace.taskType.replace("_", " ")}
+          {t.traces.taskTypes[trace.taskType] ?? trace.taskType.replace("_", " ")}
         </span>
         <span className="flex-1 truncate text-sm">{summary}</span>
         <span className="text-xs text-muted-foreground shrink-0">{trace.durationMs}ms</span>
@@ -53,7 +55,7 @@ function TraceRow({ trace }: { trace: TraceEntry }) {
       {expanded && (
         <div className="border-t px-4 py-3 space-y-3 bg-muted/20">
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">Agent:</span>
+            <span className="font-medium text-foreground">{t.traces.agent}:</span>
             <span>{trace.agentUsed}</span>
             <span className="mx-1">·</span>
             <span>{new Date(trace.timestamp).toLocaleString()}</span>
@@ -62,12 +64,12 @@ function TraceRow({ trace }: { trace: TraceEntry }) {
           </div>
 
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Input</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t.traces.input}</p>
             <p className="rounded-md bg-muted px-3 py-2 text-sm">{trace.input}</p>
           </div>
 
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Output</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t.traces.output}</p>
             <p className="rounded-md bg-muted px-3 py-2 text-sm whitespace-pre-wrap">{trace.output}</p>
           </div>
         </div>
@@ -78,6 +80,7 @@ function TraceRow({ trace }: { trace: TraceEntry }) {
 
 export default function TracesPage() {
   const { traces, setTraces, clearTraces } = useTraceStore();
+  const t = useT();
 
   useEffect(() => {
     invoke<RawTraceRow[]>("get_traces")
@@ -102,12 +105,12 @@ export default function TracesPage() {
       {/* Header */}
       <div className="flex items-center justify-between border-b px-6 py-3">
         <div>
-          <h1 className="text-base font-semibold">Traces</h1>
-          <p className="text-xs text-muted-foreground">{traces.length} recorded</p>
+          <h1 className="text-base font-semibold">{t.traces.title}</h1>
+          <p className="text-xs text-muted-foreground">{t.traces.recorded(traces.length)}</p>
         </div>
         {traces.length > 0 && (
           <Button variant="outline" size="sm" onClick={clearTraces}>
-            Clear all
+            {t.traces.clearAll}
           </Button>
         )}
       </div>
@@ -116,7 +119,7 @@ export default function TracesPage() {
       <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-1.5">
         {traces.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            No traces yet. Start a conversation to see activity.
+            {t.traces.empty}
           </div>
         ) : (
           traces.map((trace) => <TraceRow key={trace.id} trace={trace} />)
