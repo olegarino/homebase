@@ -65,13 +65,23 @@ const ChatComponent = () => {
         },
         onStream: channel,
       });
+      const durationMs = Date.now() - startTime;
       addTrace({
         input: userMessage.content,
         taskType: "simple_chat",
         agentUsed: selectedModel,
         output: assistantResponse,
-        durationMs: Date.now() - startTime,
+        durationMs,
       });
+      invoke("save_trace", {
+        trace: {
+          input: userMessage.content,
+          task_type: "simple_chat",
+          agent_used: selectedModel,
+          output: assistantResponse,
+          duration_ms: durationMs,
+        }
+      }).catch((err) => console.error("Failed to persist trace to SQLite:", err));
     } catch (error) {
       console.error("Error sending message:", error);
       addMessage({ role: "assistant", content: "Error: " + (error as Error).message });

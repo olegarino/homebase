@@ -1,7 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useTraceStore, TaskType, TraceEntry } from "@/store/traceStore";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight } from "lucide-react";
+
+interface RawTraceRow {
+  id: string;
+  timestamp: string;
+  input: string;
+  task_type: string;
+  agent_used: string;
+  output: string;
+  duration_ms: number;
+}
 
 const taskTypeColors: Record<TaskType, string> = {
   simple_chat: "bg-blue-100 text-blue-700",
@@ -66,7 +77,25 @@ function TraceRow({ trace }: { trace: TraceEntry }) {
 }
 
 export default function TracesPage() {
-  const { traces, clearTraces } = useTraceStore();
+  const { traces, setTraces, clearTraces } = useTraceStore();
+
+  useEffect(() => {
+    invoke<RawTraceRow[]>("get_traces")
+      .then((rows) =>
+        setTraces(
+          rows.map((r) => ({
+            id: r.id,
+            timestamp: r.timestamp,
+            input: r.input,
+            taskType: r.task_type as TraceEntry["taskType"],
+            agentUsed: r.agent_used,
+            output: r.output,
+            durationMs: r.duration_ms,
+          }))
+        )
+      )
+      .catch((err) => console.error("Failed to load traces:", err));
+  }, []);
 
   return (
     <div className="flex flex-col h-full">

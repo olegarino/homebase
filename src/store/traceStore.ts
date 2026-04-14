@@ -15,6 +15,7 @@ export interface TraceEntry {
 interface TraceStore {
   traces: TraceEntry[];
   addTrace: (trace: Omit<TraceEntry, "id" | "timestamp">) => void;
+  setTraces: (traces: TraceEntry[]) => void;
   clearTraces: () => void;
 }
 
@@ -32,6 +33,8 @@ export const useTraceStore = create<TraceStore>((set) => ({
         ...state.traces,
       ],
     })),
+
+  setTraces: (traces) => set({ traces }),
 
   clearTraces: () => set({ traces: [] }),
 }));
