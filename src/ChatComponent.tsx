@@ -1,5 +1,6 @@
 import { invoke, Channel } from "@tauri-apps/api/core";
-import { useEffect, FormEvent } from "react";
+import { useEffect, useState, useCallback, FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { useChatStore } from "@/store/chatStore";
 import { useTraceStore } from "@/store/traceStore";
 import { Button } from "@/components/ui/button";
@@ -9,8 +10,14 @@ interface ChatResponse {
   message: string;
 }
 
+type OllamaStatus = "checking" | "running" | "stopped";
+
 const ChatComponent = () => {
   const { addTrace } = useTraceStore();
+  const navigate = useNavigate();
+  const [
+    ollamaStatus, setOllamaStatus
+  ] = useState<OllamaStatus>("checking");
   const {
     messages,
     input,
@@ -24,6 +31,21 @@ const ChatComponent = () => {
     addMessage,
     appendToLastMessage,
   } = useChatStore();
+
+  const checkOllama = useCallback(async () => {
+    try {
+      const running: boolean = await invoke("get_ollama_status");
+      setOllamaStatus(running ? "running" : "stopped");
+    } catch {
+      setOllamaStatus("stopped");
+    }
+  }, []);
+
+  useEffect(() => {
+    checkOllama();
+    const interval = setInterval(checkOllama, 8000);
+    return () => clearInterval(interval);
+  }, [checkOllama]);
 
   useEffect(() => {
     const fetchModels = async () => {
@@ -104,6 +126,23 @@ const ChatComponent = () => {
             <option key={model} value={model}>{model}</option>
           ))}
         </select>
+        <div className="flex-1" />
+        <button
+          onClick={() => navigate("/status")}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          title="Ollama status — click to manage"
+        >
+          <span
+            className={`size-2 rounded-full ${
+              ollamaStatus === "running"
+                ? "bg-green-500 shadow-[0_0_4px_1px_rgba(34,197,94,0.6)]"
+                : ollamaStatus === "stopped"
+                ? "bg-red-500"
+                : "bg-yellow-400 animate-pulse"
+            }`}
+          />
+          <span>{ollamaStatus === "running" ? "Ollama running" : ollamaStatus === "stopped" ? "Ollama offline" : "Checking…"}</span>
+        </button>
       </div>
 
       {/* Messages */}
