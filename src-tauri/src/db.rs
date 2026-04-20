@@ -14,6 +14,8 @@ pub fn init_db(path: &str) -> Connection {
             task_type   TEXT NOT NULL,
             agent_used  TEXT NOT NULL,
             output      TEXT NOT NULL,
+            compressed   INTEGER NOT NULL DEFAULT 0,
+            tokens_saved INTEGER NOT NULL DEFAULT 0,
             duration_ms INTEGER NOT NULL
         );
 

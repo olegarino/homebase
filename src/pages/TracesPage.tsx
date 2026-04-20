@@ -13,6 +13,8 @@ interface RawTraceRow {
   agent_used: string;
   output: string;
   duration_ms: number;
+  compressed: boolean;
+  tokens_saved: number;
 }
 
 const taskTypeColors: Record<TaskType, string> = {
@@ -45,6 +47,11 @@ function TraceRow({ trace }: { trace: TraceEntry }) {
           {t.traces.taskTypes[trace.taskType] ?? trace.taskType.replace("_", " ")}
         </span>
         <span className="flex-1 truncate text-sm">{summary}</span>
+        {trace.compressed && trace.tokensSaved > 0 && (
+          <span className="rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-xs font-medium shrink-0">
+            -{trace.tokensSaved} tk
+          </span>
+        )}
         <span className="text-xs text-muted-foreground shrink-0">{trace.durationMs}ms</span>
         <span className="text-xs text-muted-foreground shrink-0">
           {new Date(trace.timestamp).toLocaleTimeString()}
@@ -61,6 +68,12 @@ function TraceRow({ trace }: { trace: TraceEntry }) {
             <span>{new Date(trace.timestamp).toLocaleString()}</span>
             <span className="mx-1">·</span>
             <span>{trace.durationMs}ms</span>
+            {trace.compressed && (
+              <>
+                <span className="mx-1">·</span>
+                <span className="text-emerald-600 font-medium">{t.traces.compressed} {trace.tokensSaved > 0 ? `(${t.traces.tokensSaved(trace.tokensSaved)})` : ""}</span>
+              </>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -79,10 +92,11 @@ function TraceRow({ trace }: { trace: TraceEntry }) {
 }
 
 export default function TracesPage() {
-  const { traces, setTraces, clearTraces } = useTraceStore();
+  const { traces, sqliteLoaded, setTraces, clearTraces } = useTraceStore();
   const t = useT();
 
   useEffect(() => {
+    if (sqliteLoaded) return;
     invoke<RawTraceRow[]>("get_traces")
       .then((rows) =>
         setTraces(
@@ -94,11 +108,13 @@ export default function TracesPage() {
             agentUsed: r.agent_used,
             output: r.output,
             durationMs: r.duration_ms,
+            compressed: r.compressed,
+            tokensSaved: r.tokens_saved,
           }))
         )
       )
       .catch((err) => console.error("Failed to load traces:", err));
-  }, []);
+  }, [sqliteLoaded]);
 
   return (
     <div className="flex flex-col h-full">

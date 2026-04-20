@@ -1,5 +1,6 @@
 import { useT } from "@/i18n";
 import { useLocaleStore } from "@/store/localeStore";
+import { useSettingsStore } from "@/store/settingsStore";
 import type { Locale } from "@/i18n";
 
 const LOCALES: { value: Locale; label: string }[] = [
@@ -10,6 +11,7 @@ const LOCALES: { value: Locale; label: string }[] = [
 export default function SettingsPage() {
   const t = useT();
   const { locale, setLocale } = useLocaleStore();
+  const { compressionEnabled, setCompressionEnabled } = useSettingsStore();
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -44,8 +46,33 @@ export default function SettingsPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
-          {t.settings.sections.cloudApi}
+          {t.settings.compression.label}
         </h2>
+        <div
+          onClick={() => setCompressionEnabled(!compressionEnabled)}
+          className="flex items-center justify-between rounded-lg border bg-card px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors"
+        >
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium">{t.settings.compression.label}</span>
+            <span className="text-xs text-muted-foreground">{t.settings.compression.description}</span>
+          </div>
+          <div
+            role="switch"
+            aria-checked={compressionEnabled}
+            className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${
+              compressionEnabled ? "bg-primary" : "bg-muted"
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                compressionEnabled ? "translate-x-4" : "translate-x-0"
+              }`}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">{t.settings.fields.githubToken}</label>
           <input

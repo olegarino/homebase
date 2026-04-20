@@ -3,7 +3,9 @@ import { useEffect, useState, useCallback, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChatStore } from "@/store/chatStore";
 import { useTraceStore } from "@/store/traceStore";
+import { useSettingsStore } from "@/store/settingsStore";
 import { useT } from "@/i18n";
+import { cavemanCompress, estimateTokens } from "@/lib/caveman";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 
@@ -17,6 +19,7 @@ const ChatComponent = () => {
   const { addTrace } = useTraceStore();
   const navigate = useNavigate();
   const t = useT();
+  const { compressionEnabled } = useSettingsStore();
   const [
     ollamaStatus, setOllamaStatus
   ] = useState<OllamaStatus>("checking");
@@ -32,6 +35,7 @@ const ChatComponent = () => {
     setIsStreaming,
     addMessage,
     appendToLastMessage,
+    clearMessages,
   } = useChatStore();
 
   const checkOllama = useCallback(async () => {
@@ -75,6 +79,17 @@ const ChatComponent = () => {
     const startTime = Date.now();
     let assistantResponse = "";
 
+    // When compression is enabled, compress every message in the context window
+    // before sending — both history and the new user message. The UI always
+    // displays the original uncompressed text.
+    const compressMsg = (msg: { role: string; content: string }) =>
+      compressionEnabled
+        ? { ...msg, content: cavemanCompress(msg.content) }
+        : msg;
+
+    const historyToSend = messages.map(compressMsg);
+    const messageToSend = compressMsg(userMessage);
+
     const channel = new Channel<ChatResponse>();
     channel.onmessage = (data: ChatResponse) => {
       assistantResponse += data.message;
@@ -85,17 +100,31 @@ const ChatComponent = () => {
       await invoke("chat", {
         request: {
           model: selectedModel,
-          messages: [...messages, userMessage],
+          messages: [...historyToSend, messageToSend],
         },
         onStream: channel,
       });
       const durationMs = Date.now() - startTime;
+
+      // Compute how many tokens were saved by compression across the full context
+      const fullContext = [...messages, userMessage]
+        .map((m) => m.content)
+        .join(" ");
+      const compressedContext = [...historyToSend, messageToSend]
+        .map((m) => m.content)
+        .join(" ");
+      const tokensSaved = compressionEnabled
+        ? Math.max(0, estimateTokens(fullContext) - estimateTokens(compressedContext))
+        : 0;
+
       addTrace({
         input: userMessage.content,
         taskType: "simple_chat",
         agentUsed: selectedModel,
         output: assistantResponse,
         durationMs,
+        compressed: compressionEnabled,
+        tokensSaved,
       });
       invoke("save_trace", {
         trace: {
@@ -104,6 +133,8 @@ const ChatComponent = () => {
           agent_used: selectedModel,
           output: assistantResponse,
           duration_ms: durationMs,
+          compressed: compressionEnabled,
+          tokens_saved: tokensSaved,
         }
       }).catch((err) => console.error("Failed to persist trace to SQLite:", err));
     } catch (error) {
@@ -129,6 +160,16 @@ const ChatComponent = () => {
           ))}
         </select>
         <div className="flex-1" />
+        {messages.length > 0 && (
+          <button
+            onClick={clearMessages}
+            disabled={isStreaming}
+            className="rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
+            title={t.chat.clearChat}
+          >
+            {t.chat.clearChat}
+          </button>
+        )}
         <button
           onClick={() => navigate("/status")}
           className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"

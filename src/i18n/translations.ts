@@ -17,6 +17,7 @@ export interface Translations {
     ollamaOffline: string;
     ollamaChecking: string;
     ollamaTooltip: string;
+    clearChat: string;
   };
   traces: {
     title: string;
@@ -26,6 +27,8 @@ export interface Translations {
     agent: string;
     input: string;
     output: string;
+    compressed: string;
+    tokensSaved: (n: number) => string;
     taskTypes: Record<string, string>;
   };
   status: {
@@ -46,6 +49,10 @@ export interface Translations {
   settings: {
     title: string;
     language: string;
+    compression: {
+      label: string;
+      description: string;
+    };
     sections: {
       cloudApi: string;
       integrations: string;
@@ -76,6 +83,7 @@ export const translations: Record<Locale, Translations> = {
       ollamaOffline: "Ollama offline",
       ollamaChecking: "Checking…",
       ollamaTooltip: "Ollama status — click to manage",
+      clearChat: "Clear chat",
     },
     traces: {
       title: "Traces",
@@ -85,6 +93,8 @@ export const translations: Record<Locale, Translations> = {
       agent: "Agent",
       input: "Input",
       output: "Output",
+      compressed: "Caveman compressed",
+      tokensSaved: (n: number) => `${n} tokens saved`,
       taskTypes: {
         simple_chat: "Simple chat",
         coding: "Coding",
@@ -124,6 +134,10 @@ export const translations: Record<Locale, Translations> = {
     settings: {
       title: "Settings",
       language: "Language",
+      compression: {
+        label: "Caveman Compression",
+        description: "Strip grammar, keep facts. Reduces tokens by 15–30% before sending to models.",
+      },
       sections: {
         cloudApi: "Cloud API",
         integrations: "Integrations",
@@ -152,6 +166,7 @@ export const translations: Record<Locale, Translations> = {
       ollamaOffline: "Ollama hors ligne",
       ollamaChecking: "Vérification…",
       ollamaTooltip: "Statut Ollama — cliquer pour gérer",
+      clearChat: "Effacer le chat",
     },
     traces: {
       title: "Traces",
@@ -161,6 +176,8 @@ export const translations: Record<Locale, Translations> = {
       agent: "Agent",
       input: "Entrée",
       output: "Sortie",
+      compressed: "Compression Caveman",
+      tokensSaved: (n: number) => `${n} tokens économisés`,
       taskTypes: {
         simple_chat: "Conversation simple",
         coding: "Code",
@@ -200,6 +217,10 @@ export const translations: Record<Locale, Translations> = {
     settings: {
       title: "Paramètres",
       language: "Langue",
+      compression: {
+        label: "Compression Caveman",
+        description: "Supprime la grammaire, conserve les faits. Réduit les tokens de 15–30% avant envoi aux modèles.",
+      },
       sections: {
         cloudApi: "API Cloud",
         integrations: "Intégrations",

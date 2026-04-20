@@ -9,7 +9,7 @@ mod state;
 use commands::{
     chat::{chat, get_models},
     ollama::{get_ollama_status, start_ollama, stop_ollama},
-    traces::{get_traces, save_trace},
+    traces::{get_traces, save_trace, delete_traces},
 };
 use state::AppState;
 
@@ -43,6 +43,7 @@ pub fn run() {
             stop_ollama,
             save_trace,
             get_traces,
+            delete_traces
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
