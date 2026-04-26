@@ -40,6 +40,12 @@ A lightweight local model (Ollama) acts as the orchestrator and router, delegati
 |              Persistence Layer              |
 |        SQLite -- traces, memory, config     |
 +---------------------------------------------+
+                            |
++---------------------------v-----------------+
+|               Voice Layer (planned)         |
+|   STT: Whisper (local) or Azure Speech      |
+|   TTS: Kokoro (local) or Azure TTS          |
++---------------------------------------------+
 ```
 
 ---
@@ -274,6 +280,74 @@ Traces are persisted from `commands/traces.rs` and loaded by `TracesPage` on mou
 
 ---
 
+### 7. Voice Layer *(planned)*
+
+Goal: let the user speak instead of type, and have the assistant's response read aloud. Fully optional — toggled per-session in the chat UI.
+
+#### Speech-to-Text (STT) — user voice → text
+
+| Option | How | Pros | Cons |
+|---|---|---|---|
+| **Whisper via Ollama** | `ollama run whisper` (when available) | Fully local, no API key | Model support still limited in Ollama |
+| **whisper.cpp** (recommended local) | Tauri shells out to `whisper-cli` binary | Fast, offline, free, good accuracy | Requires binary install |
+| **Azure Cognitive Speech SDK** | REST `POST /speech/recognition/...` | No install, very accurate | Requires Azure key, sends audio to cloud |
+| **Web Speech API** | Browser `SpeechRecognition` | Zero setup in WebView | Requires internet, limited control |
+
+**Recommended approach:** `whisper.cpp` for local-first, Azure Speech as cloud fallback if no binary found.
+
+#### Text-to-Speech (TTS) — assistant response → audio
+
+| Option | How | Pros | Cons |
+|---|---|---|---|
+| **Kokoro** (recommended local) | Run locally via `kokoro` CLI or HTTP server | High quality, fully offline, MIT license | Requires install |
+| **Web Speech API** | Browser `speechSynthesis` | Zero setup | Robotic, no control over voice |
+| **Azure TTS** | REST `POST /cognitiveservices/v1` | Natural voices, multilingual | Requires Azure key, cloud |
+
+**Recommended approach:** Kokoro for local, Azure TTS as cloud fallback.
+
+#### Architecture
+
+```
+User speaks
+  → Tauri captures audio (MediaRecorder / getUserMedia in WebView)
+  → Sends audio blob to Rust via invoke
+  → Rust calls whisper.cpp binary or Azure STT REST
+  → Returns transcript text
+  → Text injected into chat input and sent as normal message
+
+Assistant responds (text)
+  → Rust calls Kokoro binary or Azure TTS REST
+  → Returns audio bytes
+  → Frontend plays via Web Audio API
+```
+
+#### Frontend changes needed
+- Mic button in chat input bar (hold-to-record or toggle)
+- Audio visualiser / recording indicator while capturing
+- Auto-submit transcript after STT returns
+- TTS playback after each assistant message (with stop button)
+- Voice toggle in settings (on/off + provider choice: local / cloud)
+
+#### New Tauri commands needed (Rust)
+- `transcribe_audio(audio: Vec<u8>, mime: String) -> Result<String, String>` — calls whisper.cpp or Azure STT
+- `speak_text(text: String) -> Result<Vec<u8>, String>` — calls Kokoro or Azure TTS, returns audio bytes
+- `check_voice_deps() -> VoiceDepsStatus` — checks if whisper.cpp and Kokoro binaries are present
+
+#### New crates / dependencies
+```
+# No new Rust crates needed initially — shell out via std::process::Command
+# If using Azure: reqwest is already installed
+```
+
+#### Settings additions needed
+- Voice section: enable/disable toggle
+- STT provider: Local (whisper.cpp) / Cloud (Azure)
+- TTS provider: Local (Kokoro) / Cloud (Azure)
+- Azure Speech key field (if cloud selected)
+- Install helper: detect missing binaries, show download link
+
+---
+
 ## Development Phases
 
 ### Phase 1 -- Foundation
@@ -324,3 +398,12 @@ Traces are persisted from `commands/traces.rs` and loaded by `TracesPage` on mou
 - [ ] Settings persistence (API keys, model prefs) via config table
 - [ ] Error handling and retry logic
 - [ ] Vector search for semantic memory (qdrant)
+
+### Phase 7 -- Voice
+- [ ] Mic button + audio capture in chat UI (hold-to-record)
+- [ ] `transcribe_audio` Tauri command (whisper.cpp local → Azure fallback)
+- [ ] `speak_text` Tauri command (Kokoro local → Azure fallback)
+- [ ] `check_voice_deps` command — detect installed binaries
+- [ ] TTS auto-play after assistant messages + stop button
+- [ ] Voice settings section (enable toggle, provider choice, Azure key)
+- [ ] i18n strings for all voice UI elements

@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { useChatStore } from "@/store/chatStore";
 import { useTraceStore } from "@/store/traceStore";
+import type { TaskType } from "@/store/traceStore";
 import { useSettingsStore } from "@/store/settingsStore";
 import { useT } from "@/i18n";
 import { cavemanCompress, estimateTokens } from "@/lib/caveman";
@@ -86,7 +87,8 @@ const ChatComponent = () => {
 
   const sendMessage = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
-    if (!input.trim() || !selectedModel || isStreaming) return;
+    if (!input.trim() || isStreaming) return;
+    if (inferenceProvider === "ollama" && !selectedModel) return;
 
     const userMessage = { role: "user", content: input };
     addMessage(userMessage);
@@ -113,46 +115,103 @@ const ChatComponent = () => {
     };
 
     try {
-      await invoke("chat", {
-        request: {
-          model: selectedModel,
-          messages: [...historyToSend, messageToSend],
-        },
-        onStream: channel,
-      });
-      const durationMs = Date.now() - startTime;
-
-      // Compute how many tokens were saved by compression across the full context
-      const fullContext = [...messages, userMessage]
-        .map((m) => m.content)
-        .join(" ");
-      const compressedContext = [...historyToSend, messageToSend]
-        .map((m) => m.content)
-        .join(" ");
-      const tokensSaved = compressionEnabled
-        ? Math.max(0, estimateTokens(fullContext) - estimateTokens(compressedContext))
-        : 0;
-
-      addTrace({
-        input: userMessage.content,
-        taskType: "simple_chat",
-        agentUsed: selectedModel,
-        output: assistantResponse,
-        durationMs,
-        compressed: compressionEnabled,
-        tokensSaved,
-      });
-      invoke("save_trace", {
-        trace: {
-          input: userMessage.content,
-          task_type: "simple_chat",
-          agent_used: selectedModel,
-          output: assistantResponse,
-          duration_ms: durationMs,
-          compressed: compressionEnabled,
-          tokens_saved: tokensSaved,
+      if (inferenceProvider === "copilot") {
+        // Guard: require a token
+        if (!githubToken) {
+          addMessage({ role: "assistant", content: t.chat.noToken });
+          setIsStreaming(false);
+          return;
         }
-      }).catch((err) => console.error("Failed to persist trace to SQLite:", err));
+
+        // Step 1: classify the task using the local Ollama model (if available)
+        let taskType: TaskType = "simple_chat";
+        if (selectedModel) {
+          try {
+            const raw = await invoke<string>("classify_task", {
+              message: userMessage.content,
+              model: selectedModel,
+            });
+            taskType = raw as TaskType;
+          } catch {
+            // Classification is best-effort; fall back to simple_chat
+          }
+        }
+
+        // Show a transient routing indicator before the response starts
+        appendToLastMessage(t.chat.routingTo(copilotModel));
+
+        await invoke("run_copilot_agent", {
+          prompt: messageToSend.content,
+          taskType,
+          githubToken,
+          model: copilotModel,
+          onStream: channel,
+        });
+
+        const durationMs = Date.now() - startTime;
+        addTrace({
+          input: userMessage.content,
+          taskType,
+          agentUsed: copilotModel,
+          output: assistantResponse,
+          durationMs,
+          compressed: compressionEnabled,
+          tokensSaved: 0,
+        });
+        invoke("save_trace", {
+          trace: {
+            input: userMessage.content,
+            task_type: taskType,
+            agent_used: copilotModel,
+            output: assistantResponse,
+            duration_ms: durationMs,
+            compressed: false,
+            tokens_saved: 0,
+          },
+        }).catch((err) => console.error("Failed to persist trace to SQLite:", err));
+      } else {
+        await invoke("chat", {
+          request: {
+            model: selectedModel,
+            messages: [...historyToSend, messageToSend],
+          },
+          onStream: channel,
+        });
+
+        const durationMs = Date.now() - startTime;
+
+        // Compute how many tokens were saved by compression across the full context
+        const fullContext = [...messages, userMessage]
+          .map((m) => m.content)
+          .join(" ");
+        const compressedContext = [...historyToSend, messageToSend]
+          .map((m) => m.content)
+          .join(" ");
+        const tokensSaved = compressionEnabled
+          ? Math.max(0, estimateTokens(fullContext) - estimateTokens(compressedContext))
+          : 0;
+
+        addTrace({
+          input: userMessage.content,
+          taskType: "simple_chat",
+          agentUsed: selectedModel,
+          output: assistantResponse,
+          durationMs,
+          compressed: compressionEnabled,
+          tokensSaved,
+        });
+        invoke("save_trace", {
+          trace: {
+            input: userMessage.content,
+            task_type: "simple_chat",
+            agent_used: selectedModel,
+            output: assistantResponse,
+            duration_ms: durationMs,
+            compressed: compressionEnabled,
+            tokens_saved: tokensSaved,
+          },
+        }).catch((err) => console.error("Failed to persist trace to SQLite:", err));
+      }
     } catch (error) {
       console.error("Error sending message:", error);
       addMessage({ role: "assistant", content: "Error: " + (error as Error).message });

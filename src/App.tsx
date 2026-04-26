@@ -5,6 +5,7 @@ import ChatPage from "@/pages/ChatPage";
 import TracesPage from "@/pages/TracesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import StatusPage from "@/pages/StatusPage";
+import ModelsPage from "@/pages/ModelsPage";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/traces" element={<TracesPage />} />
           <Route path="/status" element={<StatusPage />} />
           <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/models" element={<ModelsPage />} />
         </Routes>
       </div>
     </Layout>

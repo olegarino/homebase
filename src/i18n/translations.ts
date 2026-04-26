@@ -7,6 +7,7 @@ export interface Translations {
     traces: string;
     status: string;
     settings: string;
+    models: string;
   };
   chat: {
     model: string;
@@ -18,6 +19,8 @@ export interface Translations {
     ollamaChecking: string;
     ollamaTooltip: string;
     clearChat: string;
+    routingTo: (model: string) => string;
+    noToken: string;
   };
   traces: {
     title: string;
@@ -79,7 +82,30 @@ export interface Translations {
       downloading: string;
       downloaded: string;
       placeholder: string;
+      installed: string;
+      available: string;
+      noModels: string;
+      delete: string;
+      deleting: string;
+      customLabel: string;
+      size: (gb: string) => string;
+      pullStatus: (status: string) => string;
     };
+  };
+  models: {
+    title: string;
+    installed: string;
+    noModels: string;
+    loading: string;
+    loadingRegistry: string;
+    delete: string;
+    deleting: string;
+    add: string;
+    searchPlaceholder: string;
+    download: string;
+    downloading: string;
+    downloaded: string;
+    customHint: string;
   };
 }
 
@@ -91,6 +117,7 @@ export const translations: Record<Locale, Translations> = {
       traces: "Traces",
       status: "Status",
       settings: "Settings",
+      models: "Models",
     },
     chat: {
       model: "Model",
@@ -102,6 +129,8 @@ export const translations: Record<Locale, Translations> = {
       ollamaChecking: "Checking…",
       ollamaTooltip: "Ollama status — click to manage",
       clearChat: "Clear chat",
+      routingTo: (model) => `Routing to ${model}…`,
+      noToken: "Add a GitHub token in Settings to use cloud models",
     },
     traces: {
       title: "Traces",
@@ -176,13 +205,36 @@ export const translations: Record<Locale, Translations> = {
         copilotModel: "Copilot model",
       },
       modelManager: {
-        label: "Download Ollama Model",
-        description: "Pull a model directly from the Ollama library to use locally.",
+        label: "Ollama Models",
+        description: "Manage models installed locally via Ollama.",
         download: "Download",
         downloading: "Downloading…",
         downloaded: "Downloaded",
         placeholder: "e.g. llama3.2, mistral, phi4",
+        installed: "Installed",
+        available: "Add a model",
+        noModels: "No models installed yet.",
+        delete: "Delete",
+        deleting: "Deleting…",
+        customLabel: "Custom model name",
+        size: (gb) => `${gb} GB`,
+        pullStatus: (status) => status,
       },
+    },
+    models: {
+      title: "Models",
+      installed: "Installed",
+      noModels: "No models installed yet.",
+      loading: "Loading…",
+      loadingRegistry: "Loading from ollama.com…",
+      delete: "Delete",
+      deleting: "Deleting…",
+      add: "Add a model",
+      searchPlaceholder: "Search ollama.com or type a custom name…",
+      download: "Download",
+      downloading: "Downloading…",
+      downloaded: "Downloaded",
+      customHint: "custom model",
     },
   },
   fr: {
@@ -192,6 +244,7 @@ export const translations: Record<Locale, Translations> = {
       traces: "Traces",
       status: "Statut",
       settings: "Paramètres",
+      models: "Modèles",
     },
     chat: {
       model: "Modèle",
@@ -203,6 +256,8 @@ export const translations: Record<Locale, Translations> = {
       ollamaChecking: "Vérification…",
       ollamaTooltip: "Statut Ollama — cliquer pour gérer",
       clearChat: "Effacer le chat",
+      routingTo: (model) => `Routage vers ${model}…`,
+      noToken: "Ajoutez un token GitHub dans les Paramètres pour utiliser les modèles cloud",
     },
     traces: {
       title: "Traces",
@@ -277,13 +332,36 @@ export const translations: Record<Locale, Translations> = {
         copilotModel: "Modèle Copilot",
       },
       modelManager: {
-        label: "Télécharger un modèle Ollama",
-        description: "Téléchargez un modèle depuis la bibliothèque Ollama pour l'utiliser localement.",
+        label: "Modèles Ollama",
+        description: "Gérez les modèles installés localement via Ollama.",
         download: "Télécharger",
         downloading: "Téléchargement…",
         downloaded: "Téléchargé",
         placeholder: "ex. llama3.2, mistral, phi4",
+        installed: "Installés",
+        available: "Ajouter un modèle",
+        noModels: "Aucun modèle installé.",
+        delete: "Supprimer",
+        deleting: "Suppression…",
+        customLabel: "Nom de modèle personnalisé",
+        size: (gb) => `${gb} Go`,
+        pullStatus: (status) => status,
       },
+    },
+    models: {
+      title: "Modèles",
+      installed: "Installés",
+      noModels: "Aucun modèle installé.",
+      loading: "Chargement…",
+      loadingRegistry: "Chargement depuis ollama.com…",
+      delete: "Supprimer",
+      deleting: "Suppression…",
+      add: "Ajouter un modèle",
+      searchPlaceholder: "Rechercher sur ollama.com ou saisir un nom personnalisé…",
+      download: "Télécharger",
+      downloading: "Téléchargement…",
+      downloaded: "Téléchargé",
+      customHint: "modèle personnalisé",
     },
   },
 };

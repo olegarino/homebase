@@ -8,8 +8,10 @@ mod state;
 
 use commands::{
     chat::{chat, get_models},
-    ollama::{get_ollama_status, start_ollama, stop_ollama},
-    traces::{get_traces, save_trace, delete_traces},
+    copilot::run_copilot_agent,
+    ollama::{delete_ollama_model, get_ollama_status, list_local_ollama_models, list_ollama_registry_models, pull_ollama_model, start_ollama, stop_ollama},
+    router::classify_task,
+    traces::{delete_traces, get_traces, save_trace},
 };
 use state::AppState;
 
@@ -41,9 +43,15 @@ pub fn run() {
             get_ollama_status,
             start_ollama,
             stop_ollama,
+            pull_ollama_model,
+            list_local_ollama_models,
+            delete_ollama_model,
+            list_ollama_registry_models,
             save_trace,
             get_traces,
-            delete_traces
+            delete_traces,
+            classify_task,
+            run_copilot_agent,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
