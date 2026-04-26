@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useT } from "@/i18n";
 import { useLocaleStore } from "@/store/localeStore";
 import { useSettingsStore } from "@/store/settingsStore";
@@ -11,10 +13,35 @@ const LOCALES: { value: Locale; label: string }[] = [
 export default function SettingsPage() {
   const t = useT();
   const { locale, setLocale } = useLocaleStore();
-  const { compressionEnabled, setCompressionEnabled } = useSettingsStore();
+  const { compressionEnabled, setCompressionEnabled, githubToken, setGithubToken } = useSettingsStore();
+  const [tokenDraft, setTokenDraft] = useState(githubToken);
+  const [tokenSaved, setTokenSaved] = useState(false);
+  const [modelInput, setModelInput] = useState("");
+  const [pullStatus, setPullStatus] = useState<"idle" | "pulling" | "done" | "error">("idle");
+  const [pullProgress, setPullProgress] = useState("");
+
+  const handleSaveToken = () => {
+    setGithubToken(tokenDraft.trim());
+    setTokenSaved(true);
+    setTimeout(() => setTokenSaved(false), 2000);
+  };
+
+  const handlePullModel = async () => {
+    if (!modelInput.trim()) return;
+    setPullStatus("pulling");
+    setPullProgress("");
+    try {
+      await invoke("pull_ollama_model", { name: modelInput.trim() });
+      setPullStatus("done");
+      setModelInput("");
+    } catch (err) {
+      setPullStatus("error");
+      setPullProgress(String(err));
+    }
+  };
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 p-6 overflow-y-auto h-full">
       <h1 className="text-2xl font-semibold">{t.settings.title}</h1>
 
       <section className="flex flex-col gap-3">
@@ -74,12 +101,51 @@ export default function SettingsPage() {
 
       <section className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">{t.settings.modelManager.label}</label>
+          <p className="text-xs text-muted-foreground">{t.settings.modelManager.description}</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder={t.settings.modelManager.placeholder}
+              value={modelInput}
+              onChange={(e) => { setModelInput(e.target.value); setPullStatus("idle"); }}
+              onKeyDown={(e) => e.key === "Enter" && handlePullModel()}
+              className="flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              onClick={handlePullModel}
+              disabled={!modelInput.trim() || pullStatus === "pulling"}
+              className="rounded-md border bg-background px-3 py-2 text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-40"
+            >
+              {pullStatus === "pulling" ? t.settings.modelManager.downloading : pullStatus === "done" ? `✓ ${t.settings.modelManager.downloaded}` : t.settings.modelManager.download}
+            </button>
+          </div>
+          {pullStatus === "error" && (
+            <p className="text-xs text-destructive">{pullProgress}</p>
+          )}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">{t.settings.fields.githubToken}</label>
-          <input
-            type="password"
-            placeholder="ghp_..."
-            className="rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <p className="text-xs text-muted-foreground">{t.settings.fields.githubTokenDescription}</p>
+          <div className="flex gap-2">
+            <input
+              type="password"
+              placeholder="ghp_..."
+              value={tokenDraft}
+              onChange={(e) => { setTokenDraft(e.target.value); setTokenSaved(false); }}
+              className="flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+            <button
+              onClick={handleSaveToken}
+              disabled={tokenDraft.trim() === githubToken}
+              className="rounded-md border bg-background px-3 py-2 text-sm font-medium hover:bg-muted/50 transition-colors disabled:opacity-40"
+            >
+              {tokenSaved ? `✓ ${t.settings.fields.githubTokenSaved}` : t.nav.settings}
+            </button>
+          </div>
         </div>
       </section>
 

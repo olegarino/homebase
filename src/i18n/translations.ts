@@ -59,8 +59,26 @@ export interface Translations {
     };
     fields: {
       githubToken: string;
+      githubTokenDescription: string;
+      githubTokenSaved: string;
       jiraBaseUrl: string;
       jiraApiToken: string;
+    };
+    provider: {
+      label: string;
+      description: string;
+      ollama: string;
+      copilot: string;
+      ollamaUnavailable: string;
+      copilotModel: string;
+    };
+    modelManager: {
+      label: string;
+      description: string;
+      download: string;
+      downloading: string;
+      downloaded: string;
+      placeholder: string;
     };
   };
 }
@@ -144,8 +162,26 @@ export const translations: Record<Locale, Translations> = {
       },
       fields: {
         githubToken: "GitHub Token",
+        githubTokenDescription: "Used to access GitHub Copilot models. Find yours at github.com/settings/tokens.",
+        githubTokenSaved: "Token saved",
         jiraBaseUrl: "Jira Base URL",
         jiraApiToken: "Jira API Token",
+      },
+      provider: {
+        label: "AI Provider",
+        description: "Choose where chat requests are processed.",
+        ollama: "Local (Ollama)",
+        copilot: "Cloud (GitHub Copilot)",
+        ollamaUnavailable: "Ollama is not installed or not running",
+        copilotModel: "Copilot model",
+      },
+      modelManager: {
+        label: "Download Ollama Model",
+        description: "Pull a model directly from the Ollama library to use locally.",
+        download: "Download",
+        downloading: "Downloading…",
+        downloaded: "Downloaded",
+        placeholder: "e.g. llama3.2, mistral, phi4",
       },
     },
   },
@@ -227,8 +263,26 @@ export const translations: Record<Locale, Translations> = {
       },
       fields: {
         githubToken: "Token GitHub",
+        githubTokenDescription: "Utilisé pour accéder aux modèles GitHub Copilot. Trouvez le vôtre sur github.com/settings/tokens.",
+        githubTokenSaved: "Token enregistré",
         jiraBaseUrl: "URL de base Jira",
         jiraApiToken: "Token API Jira",
+      },
+      provider: {
+        label: "Fournisseur IA",
+        description: "Choisissez où les requêtes sont traitées.",
+        ollama: "Local (Ollama)",
+        copilot: "Cloud (GitHub Copilot)",
+        ollamaUnavailable: "Ollama n'est pas installé ou ne fonctionne pas",
+        copilotModel: "Modèle Copilot",
+      },
+      modelManager: {
+        label: "Télécharger un modèle Ollama",
+        description: "Téléchargez un modèle depuis la bibliothèque Ollama pour l'utiliser localement.",
+        download: "Télécharger",
+        downloading: "Téléchargement…",
+        downloaded: "Téléchargé",
+        placeholder: "ex. llama3.2, mistral, phi4",
       },
     },
   },

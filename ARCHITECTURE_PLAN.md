@@ -33,7 +33,7 @@ A lightweight local model (Ollama) acts as the orchestrator and router, delegati
                             |
 +---------------------------v-----------------+
 |                 Tool Layer                  |
-|   Jira * Confluence * GitHub * filesystem   |
+|   Jira * Confluence * GitHub * filesystem * Teams * Outlook   |
 +---------------------------------------------+
                             |
 +---------------------------v-----------------+
@@ -142,10 +142,63 @@ trait Tool {
 | `GitHubTool` | GitHub REST API | PRs, issues, file content |
 | `FilesystemTool` | Local FS | Read/write local files |
 | `ShellTool` | `std::process::Command` | Run terminal commands locally |
+| `OutlookTool` | Microsoft Graph API | Read/send emails, search inbox, manage calendar |
+| `TeamsTool` | Microsoft Graph API | Send messages, read channels, create meetings |
 
 ---
 
-### 5. Tracing Layer
+### 4b. Microsoft Graph API — Teams & Outlook
+
+**Auth flow:** OAuth 2.0 Device Authorization Grant (best for desktop apps — no redirect URI needed).
+The user logs in once via a browser pop-up, receives an access token + refresh token stored in the `config` SQLite table.
+
+**Endpoints used:**
+
+| Capability | Endpoint |
+|---|---|
+| Read inbox | `GET /me/messages` |
+| Send email | `POST /me/sendMail` |
+| Search email | `GET /me/messages?$search="..."` |
+| List calendar events | `GET /me/calendarView` |
+| Create meeting | `POST /me/events` |
+| List Teams channels | `GET /me/joinedTeams` |
+| Read channel messages | `GET /teams/{id}/channels/{id}/messages` |
+| Send Teams message | `POST /teams/{id}/channels/{id}/messages` |
+
+**Scopes required (Microsoft Entra app registration):**
+```
+Mail.Read  Mail.Send  Calendars.ReadWrite
+Team.ReadBasic.All  ChannelMessage.Read.All  ChannelMessage.Send
+```
+
+**Rust implementation plan:**
+
+- Add `OutlookTool` and `TeamsTool` structs implementing the `Tool` trait
+- Auth handled in a new `src-tauri/src/commands/msgraph.rs` module:
+  - `msgraph_login()` — triggers device code flow, opens browser, polls for token
+  - `msgraph_logout()` — clears stored tokens
+  - `msgraph_status()` — returns whether a valid token exists
+- Token refresh handled automatically on each API call (check expiry, refresh if needed)
+- HTTP calls via `reqwest` (already installed)
+
+**Crate to add:**
+```
+oauth2 = "4"   # handles device flow + token refresh
+```
+
+**Settings page additions needed:**
+- "Connect Microsoft account" button → calls `msgraph_login()`
+- Shows connected account email once authenticated
+- "Disconnect" button → calls `msgraph_logout()`
+
+**App registration (one-time setup by developer):**
+1. Go to https://portal.azure.com → Microsoft Entra ID → App registrations
+2. New registration — platform: **Mobile and desktop**, redirect URI: `https://login.microsoftonline.com/common/oauth2/nativeclient`
+3. Enable **Allow public client flows** (for device code grant)
+4. Copy the **Application (client) ID** → hardcode in Rust as a constant
+5. Add required API permissions listed above
+
+---
 
 Every task execution is fully logged to local SQLite at:
 `~/Library/Application Support/Homebase/homebase.db`
@@ -203,6 +256,7 @@ Traces are persisted from `commands/traces.rs` and loaded by `TracesPage` on mou
 | `serde` / `serde_json` | Serialisation | installed |
 | `async-openai` | GitHub Models API | planned |
 | `reqwest` | HTTP for tool APIs | installed |
+| `oauth2` | MS Graph device auth flow + token refresh | planned |
 | `tracing` | Structured logging | planned |
 
 ---
@@ -215,6 +269,7 @@ Traces are persisted from `commands/traces.rs` and loaded by `TracesPage` on mou
 | `reasoning` | "explain", "plan", "analyse", "compare" | GPT-4o |
 | `data` | "spreadsheet", "Excel", "CSV", "calculate" | qwen2.5:14b (local) |
 | `tool_call` | "create ticket", "open PR", "search Jira" | Tool Layer |
+| `tool_call` | "send email", "check inbox", "schedule meeting", "message in Teams" | Tool Layer → MS Graph |
 | `simple_chat` | everything else | llama3.2 (local) |
 
 ---
@@ -234,6 +289,10 @@ Traces are persisted from `commands/traces.rs` and loaded by `TracesPage` on mou
 - [x] Status page with live polling + start/stop
 - [x] Settings page with language toggle
 - [x] EN/FR i18n system with `useT()` hook and persisted locale
+- [x] AI provider toggle (Ollama vs Copilot) in Settings — persisted in `settingsStore`
+- [x] Copilot model selector (gpt-4o, claude-3-7-sonnet, o3-mini, etc.) in Settings
+- [x] Ollama model downloader UI in Settings (`pull_ollama_model` Tauri command — see Pending Rust)
+- [ ] Disable Ollama provider option when Ollama is not detected (check via `get_ollama_status`)
 
 ### Phase 3 -- Tracing & Persistence
 - [x] SQLite setup with WAL mode and migrations
@@ -247,12 +306,18 @@ Traces are persisted from `commands/traces.rs` and loaded by `TracesPage` on mou
 - [ ] Task classifier (llama3.2 prompt)
 - [ ] GitHub Models API connection (`async-openai`)
 - [ ] Basic router (local vs cloud by task type)
+- [ ] `pull_ollama_model(name: String)` Tauri command — calls `POST http://localhost:11434/api/pull`, streams progress events back via `Channel<String>`, registered in `lib.rs`
+- [ ] Respect `inferenceProvider` setting in `ChatComponent` — if `"copilot"`, skip Ollama and call Copilot SDK with selected `copilotModel`
 
 ### Phase 5 -- Tool Layer
 - [ ] `Tool` trait definition
 - [ ] Jira tool
 - [ ] Confluence tool
 - [ ] GitHub tool
+- [ ] Microsoft Graph auth (`msgraph_login` / `msgraph_logout` / token refresh)
+- [ ] Outlook tool (read inbox, send email, calendar)
+- [ ] Teams tool (read channels, send messages, create meetings)
+- [ ] Settings page: "Connect Microsoft account" button + connected state
 
 ### Phase 6 -- Memory & Polish
 - [ ] Session memory from SQLite

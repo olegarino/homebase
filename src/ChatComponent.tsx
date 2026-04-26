@@ -19,7 +19,7 @@ const ChatComponent = () => {
   const { addTrace } = useTraceStore();
   const navigate = useNavigate();
   const t = useT();
-  const { compressionEnabled } = useSettingsStore();
+  const { compressionEnabled, inferenceProvider, setInferenceProvider, copilotModel, setCopilotModel, copilotModels, setCopilotModels, githubToken } = useSettingsStore();
   const [
     ollamaStatus, setOllamaStatus
   ] = useState<OllamaStatus>("checking");
@@ -67,6 +67,22 @@ const ChatComponent = () => {
     };
     fetchModels();
   }, []);
+
+  useEffect(() => {
+    if (!githubToken) return;
+    fetch("https://models.inference.ai.azure.com/models", {
+      headers: { Authorization: `Bearer ${githubToken}` },
+    })
+      .then((r) => r.json())
+      .then((data: { id: string }[]) => {
+        const ids = data.map((m) => m.id).sort();
+        setCopilotModels(ids);
+        if (!copilotModel || !ids.includes(copilotModel)) {
+          setCopilotModel(ids[0] ?? "");
+        }
+      })
+      .catch((err) => console.error("Failed to fetch Copilot models:", err));
+  }, [githubToken]);
 
   const sendMessage = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
@@ -150,15 +166,48 @@ const ChatComponent = () => {
       {/* Model selector */}
       <div className="flex items-center gap-2 border-b px-4 py-2">
         <span className="text-xs text-muted-foreground font-medium">{t.chat.model}:</span>
-        <select
-          value={selectedModel}
-          onChange={(e) => setSelectedModel(e.target.value)}
-          className="rounded-md border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-        >
-          {models.map((model) => (
-            <option key={model} value={model}>{model}</option>
+        {inferenceProvider === "ollama" ? (
+          <select
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="rounded-md border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {models.map((model) => (
+              <option key={model} value={model}>{model}</option>
+            ))}
+          </select>
+        ) : (
+          <select
+            value={copilotModel}
+            onChange={(e) => setCopilotModel(e.target.value)}
+            className="rounded-md border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            {copilotModels.length === 0 ? (
+              <option value="">No token set</option>
+            ) : (
+              copilotModels.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))
+            )}
+          </select>
+        )}
+        <div className="relative flex rounded-md border bg-muted/40 p-0.5 gap-0">
+          <span
+            className="absolute top-0.5 bottom-0.5 rounded bg-background shadow-sm transition-all duration-200"
+            style={{ width: "calc(50% - 2px)", left: inferenceProvider === "ollama" ? "2px" : "calc(50%)" }}
+          />
+          {(["ollama", "copilot"] as const).map((p) => (
+            <button
+              key={p}
+              onClick={() => setInferenceProvider(p)}
+              className={`relative z-10 px-2.5 py-0.5 text-xs font-medium transition-colors duration-200 ${
+                inferenceProvider === p ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {p === "ollama" ? "Local" : "Copilot"}
+            </button>
           ))}
-        </select>
+        </div>
         <div className="flex-1" />
         {messages.length > 0 && (
           <button
