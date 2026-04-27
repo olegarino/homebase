@@ -21,9 +21,10 @@ const ChatComponent = () => {
   const navigate = useNavigate();
   const t = useT();
   const { compressionEnabled, inferenceProvider, setInferenceProvider, copilotModel, setCopilotModel, copilotModels, setCopilotModels, githubToken } = useSettingsStore();
-  const [
-    ollamaStatus, setOllamaStatus
-  ] = useState<OllamaStatus>("checking");
+  const [ollamaStatus, setOllamaStatus] = useState<OllamaStatus>("checking");
+  const [copilotModelsLoading, setCopilotModelsLoading] = useState(false);
+  const [copilotModelsError, setCopilotModelsError] = useState<string | null>(null);
+  const [routingModel, setRoutingModel] = useState<string | null>(null);
   const {
     messages,
     input,
@@ -70,19 +71,26 @@ const ChatComponent = () => {
   }, []);
 
   useEffect(() => {
-    if (!githubToken) return;
-    fetch("https://models.inference.ai.azure.com/models", {
-      headers: { Authorization: `Bearer ${githubToken}` },
-    })
-      .then((r) => r.json())
-      .then((data: { id: string }[]) => {
-        const ids = data.map((m) => m.id).sort();
+    if (!githubToken) {
+      setCopilotModels([]);
+      setCopilotModelsError(null);
+      return;
+    }
+    setCopilotModelsLoading(true);
+    setCopilotModelsError(null);
+    invoke<string[]>("list_copilot_models", { githubToken })
+      .then((ids) => {
         setCopilotModels(ids);
+        setCopilotModelsError(null);
         if (!copilotModel || !ids.includes(copilotModel)) {
           setCopilotModel(ids[0] ?? "");
         }
       })
-      .catch((err) => console.error("Failed to fetch Copilot models:", err));
+      .catch((err) => {
+        console.error("Failed to fetch Copilot models:", err);
+        setCopilotModelsError(String(err));
+      })
+      .finally(() => setCopilotModelsLoading(false));
   }, [githubToken]);
 
   const sendMessage = async (e: FormEvent): Promise<void> => {
@@ -137,8 +145,8 @@ const ChatComponent = () => {
           }
         }
 
-        // Show a transient routing indicator before the response starts
-        appendToLastMessage(t.chat.routingTo(copilotModel));
+        // Show which model is handling the request
+        setRoutingModel(copilotModel);
 
         await invoke("run_copilot_agent", {
           prompt: messageToSend.content,
@@ -169,6 +177,7 @@ const ChatComponent = () => {
             tokens_saved: 0,
           },
         }).catch((err) => console.error("Failed to persist trace to SQLite:", err));
+        setRoutingModel(null);
       } else {
         await invoke("chat", {
           request: {
@@ -217,6 +226,7 @@ const ChatComponent = () => {
       addMessage({ role: "assistant", content: "Error: " + (error as Error).message });
     } finally {
       setIsStreaming(false);
+      setRoutingModel(null);
     }
   };
 
@@ -236,19 +246,34 @@ const ChatComponent = () => {
             ))}
           </select>
         ) : (
-          <select
-            value={copilotModel}
-            onChange={(e) => setCopilotModel(e.target.value)}
-            className="rounded-md border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            {copilotModels.length === 0 ? (
-              <option value="">No token set</option>
-            ) : (
-              copilotModels.map((m) => (
-                <option key={m} value={m}>{m}</option>
-              ))
+          <div className="flex flex-col gap-0.5">
+            <select
+              value={copilotModel}
+              onChange={(e) => setCopilotModel(e.target.value)}
+              className="rounded-md border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              {copilotModelsLoading ? (
+                <option value="">Loading models…</option>
+              ) : copilotModelsError ? (
+                <option value="">⚠ Copilot unavailable</option>
+              ) : copilotModels.length === 0 ? (
+                <option value="">{githubToken ? "No models found" : "No token set"}</option>
+              ) : (
+                copilotModels.map((m) => (
+                  <option key={m} value={m}>{m}</option>
+                ))
+              )}
+            </select>
+            {copilotModelsError && (
+              <p className="text-xs text-destructive max-w-[220px] truncate" title={copilotModelsError}>
+                {copilotModelsError.includes("fine-grained") || copilotModelsError.includes("401") || copilotModelsError.includes("exchange")
+                ? "Wrong token type — needs fine-grained PAT"
+                : copilotModelsError.includes("subscription")
+                ? "No Copilot subscription"
+                : "Token error — check Settings"}
+              </p>
             )}
-          </select>
+          </div>
         )}
         <div className="relative flex rounded-md border bg-muted/40 p-0.5 gap-0">
           <span
@@ -321,8 +346,13 @@ const ChatComponent = () => {
         ))}
         {isStreaming && (
           <div className="flex justify-start">
-            <div className="bg-muted rounded-2xl px-4 py-2 text-sm text-muted-foreground animate-pulse">
-              {t.chat.thinking}
+            <div className="flex flex-col gap-1">
+              {routingModel && (
+                <span className="text-[10px] text-muted-foreground pl-1">{routingModel}</span>
+              )}
+              <div className="bg-muted rounded-2xl px-4 py-2 text-sm text-muted-foreground animate-pulse">
+                {t.chat.thinking}
+              </div>
             </div>
           </div>
         )}

@@ -8,7 +8,9 @@ mod state;
 
 use commands::{
     chat::{chat, get_models},
-    copilot::run_copilot_agent,
+    auth::{poll_github_login, start_github_login, get_github_user},
+    copilot::{list_copilot_models, run_copilot_agent},
+    logs::{clear_logs, get_logs, write_log},
     ollama::{delete_ollama_model, get_ollama_status, list_local_ollama_models, list_ollama_registry_models, pull_ollama_model, start_ollama, stop_ollama},
     router::classify_task,
     traces::{delete_traces, get_traces, save_trace},
@@ -33,7 +35,7 @@ pub fn run() {
 
             app.manage(AppState {
                 ollama: Mutex::new(Ollama::default()),
-                db: std::sync::Mutex::new(conn),
+                db: std::sync::Arc::new(std::sync::Mutex::new(conn)),
             });
             Ok(())
         })
@@ -51,7 +53,14 @@ pub fn run() {
             get_traces,
             delete_traces,
             classify_task,
+            start_github_login,
+            poll_github_login,
+            get_github_user,
+            list_copilot_models,
             run_copilot_agent,
+            write_log,
+            get_logs,
+            clear_logs,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -2,12 +2,19 @@ export type Locale = "en" | "fr";
 
 export interface Translations {
   appSubtitle: string;
+  logs: {
+    title: string;
+    empty: string;
+    clear: string;
+    autoRefresh: string;
+  };
   nav: {
     chat: string;
     traces: string;
     status: string;
     settings: string;
     models: string;
+    logs: string;
   };
   chat: {
     model: string;
@@ -19,7 +26,6 @@ export interface Translations {
     ollamaChecking: string;
     ollamaTooltip: string;
     clearChat: string;
-    routingTo: (model: string) => string;
     noToken: string;
   };
   traces: {
@@ -63,7 +69,19 @@ export interface Translations {
     fields: {
       githubToken: string;
       githubTokenDescription: string;
+      githubTokenHint: string;
       githubTokenSaved: string;
+      githubConnect: string;
+      githubConnected: string;
+      githubDisconnect: string;
+      githubDevicePrompt: string;
+      githubWaiting: string;
+      githubCancel: string;
+      githubCopilotChecking: string;
+      githubCopilotOk: string;
+      githubCopilotFail: string;
+      githubProfileError: string;
+      githubAuthFailed: string;
       jiraBaseUrl: string;
       jiraApiToken: string;
     };
@@ -112,12 +130,19 @@ export interface Translations {
 export const translations: Record<Locale, Translations> = {
   en: {
     appSubtitle: "Local AI Orchestrator",
+    logs: {
+      title: "Logs",
+      empty: "No log entries yet.",
+      clear: "Clear logs",
+      autoRefresh: "Auto-refresh",
+    },
     nav: {
       chat: "Chat",
       traces: "Traces",
       status: "Status",
       settings: "Settings",
       models: "Models",
+      logs: "Logs",
     },
     chat: {
       model: "Model",
@@ -129,7 +154,6 @@ export const translations: Record<Locale, Translations> = {
       ollamaChecking: "Checking…",
       ollamaTooltip: "Ollama status — click to manage",
       clearChat: "Clear chat",
-      routingTo: (model) => `Routing to ${model}…`,
       noToken: "Add a GitHub token in Settings to use cloud models",
     },
     traces: {
@@ -191,8 +215,20 @@ export const translations: Record<Locale, Translations> = {
       },
       fields: {
         githubToken: "GitHub Token",
-        githubTokenDescription: "Used to access GitHub Copilot models. Find yours at github.com/settings/tokens.",
+        githubTokenDescription: "Connect your GitHub account to use GitHub Copilot for cloud inference.",
+        githubTokenHint: "Generate at github.com/settings/personal-access-tokens/new → Permissions → Copilot Requests",
         githubTokenSaved: "Token saved",
+        githubConnect: "Connect with GitHub",
+        githubConnected: "Connected to GitHub Copilot",
+        githubDisconnect: "Disconnect",
+        githubDevicePrompt: "Open the link below and enter the code to authorize Buddy:",
+        githubWaiting: "Waiting for authorization…",
+        githubCancel: "Cancel",
+        githubCopilotChecking: "Checking Copilot access…",
+        githubCopilotOk: "Copilot access confirmed",
+        githubCopilotFail: "No Copilot access — check your subscription",
+        githubProfileError: "Could not load profile",
+        githubAuthFailed: "Authorization failed or expired. Please try again.",
         jiraBaseUrl: "Jira Base URL",
         jiraApiToken: "Jira API Token",
       },
@@ -239,12 +275,19 @@ export const translations: Record<Locale, Translations> = {
   },
   fr: {
     appSubtitle: "Orchestrateur IA local",
+    logs: {
+      title: "Journaux",
+      empty: "Aucune entrée pour l'instant.",
+      clear: "Vider les journaux",
+      autoRefresh: "Actualisation auto",
+    },
     nav: {
       chat: "Chat",
       traces: "Traces",
       status: "Statut",
       settings: "Paramètres",
       models: "Modèles",
+      logs: "Journaux",
     },
     chat: {
       model: "Modèle",
@@ -256,7 +299,6 @@ export const translations: Record<Locale, Translations> = {
       ollamaChecking: "Vérification…",
       ollamaTooltip: "Statut Ollama — cliquer pour gérer",
       clearChat: "Effacer le chat",
-      routingTo: (model) => `Routage vers ${model}…`,
       noToken: "Ajoutez un token GitHub dans les Paramètres pour utiliser les modèles cloud",
     },
     traces: {
@@ -318,7 +360,19 @@ export const translations: Record<Locale, Translations> = {
       },
       fields: {
         githubToken: "Token GitHub",
-        githubTokenDescription: "Utilisé pour accéder aux modèles GitHub Copilot. Trouvez le vôtre sur github.com/settings/tokens.",
+        githubTokenDescription: "Connectez votre compte GitHub pour utiliser GitHub Copilot.",
+        githubConnect: "Se connecter avec GitHub",
+        githubConnected: "Connecté à GitHub Copilot",
+        githubDisconnect: "Déconnecter",
+        githubDevicePrompt: "Ouvrez le lien ci-dessous et saisissez le code pour autoriser Buddy :",
+        githubWaiting: "En attente d'autorisation…",
+        githubCancel: "Annuler",
+        githubCopilotChecking: "Vérification de l'accès Copilot…",
+        githubCopilotOk: "Accès Copilot confirmé",
+        githubCopilotFail: "Pas d'accès Copilot — vérifiez votre abonnement",
+        githubProfileError: "Impossible de charger le profil",
+        githubAuthFailed: "Autorisation échouée ou expirée. Veuillez réessayer.",
+        githubTokenHint: "Générer sur github.com/settings/personal-access-tokens/new → Permissions → Copilot Requests",
         githubTokenSaved: "Token enregistré",
         jiraBaseUrl: "URL de base Jira",
         jiraApiToken: "Token API Jira",

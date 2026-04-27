@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { MessageSquare, Activity, Settings, Radio, HardDrive } from "lucide-react";
+import { MessageSquare, Activity, Settings, Radio, HardDrive, ScrollText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/i18n";
 
@@ -9,6 +9,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { to: "/", label: t.nav.chat, icon: MessageSquare },
     { to: "/traces", label: t.nav.traces, icon: Activity },
     { to: "/models", label: t.nav.models, icon: HardDrive },
+    { to: "/logs",   label: t.nav.logs,   icon: ScrollText },
     { to: "/status", label: t.nav.status, icon: Radio },
     { to: "/settings", label: t.nav.settings, icon: Settings },
   ];

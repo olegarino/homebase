@@ -6,6 +6,7 @@ import TracesPage from "@/pages/TracesPage";
 import SettingsPage from "@/pages/SettingsPage";
 import StatusPage from "@/pages/StatusPage";
 import ModelsPage from "@/pages/ModelsPage";
+import LogsPage from "@/pages/LogsPage";
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
           <Route path="/status" element={<StatusPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/models" element={<ModelsPage />} />
+          <Route path="/logs" element={<LogsPage />} />
         </Routes>
       </div>
     </Layout>
